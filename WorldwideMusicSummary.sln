@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29609.76
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldwideMusicSummary", "WorldwideMusicSummary.csproj", "{4DF3E19B-BECF-477F-80FD-C37707C2D7CC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DF3E19B-BECF-477F-80FD-C37707C2D7CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DF3E19B-BECF-477F-80FD-C37707C2D7CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DF3E19B-BECF-477F-80FD-C37707C2D7CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DF3E19B-BECF-477F-80FD-C37707C2D7CC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9F8BA922-7247-438B-8933-77B1484934A0}
+	EndGlobalSection
+EndGlobal
