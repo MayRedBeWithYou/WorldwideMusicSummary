@@ -3,7 +3,23 @@
 }
 
 #map {
-    width: 80%;
-    height: 800px;
-    background-color: grey;
+    height: 90vh;
+    margin-right: 300px;
+}
+
+#controlPanel {
+    display: inline-block;
+    float: right;
+    width: 500px;
+    margin-right: 5px;
+    margin-left: 5px;
+    padding: 10px;
+    padding-top: 0;
+    height: 90vh;
+    overflow-y: auto;
+}
+
+.menu {
+    border: solid 1px black;
+    margin-bottom: 10px;
 }

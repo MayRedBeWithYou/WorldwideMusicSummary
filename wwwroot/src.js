@@ -12,6 +12,7 @@ window.onload = function init() {
                 var col = randColor();
                 let polygons = [];
                 let count = 0;
+                let code = country.ISO_A2;
                 let center = { lat: 0, lng: 0 }
                 if (name == "Antarctica") return;
                 if (country.geometry.type == "Polygon") {
@@ -108,7 +109,8 @@ window.onload = function init() {
                     polygons: polygons,
                     color: col,
                     center: center,
-                    info: info
+                    info: info,
+                    code: code,
                 };
             });
         }
