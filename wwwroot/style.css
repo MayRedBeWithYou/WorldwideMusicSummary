@@ -10,7 +10,7 @@
 #controlPanel {
     display: inline-block;
     float: right;
-    width: 500px;
+    width: 400px;
     margin-right: 5px;
     margin-left: 5px;
     padding: 10px;
@@ -23,3 +23,30 @@
     border: solid 1px black;
     margin-bottom: 10px;
 }
+
+.menuPanel {
+    padding: 0 18px;
+    background-color: white;
+    min-height: 60vh;
+    overflow: hidden;
+}
+
+.okButton {
+    font-family: 'Roboto', sans-serif;
+    font-size: 15px;
+    line-height: 20px;
+    padding: 8px;
+    min-width: 120px;
+    border-radius: 5px;
+    border: 1px solid cornflowerblue;
+    background-color: cornflowerblue;
+    color: white;
+    float: right;
+    margin: 12px 0;
+    margin-left: 10px;
+}
+
+    .okButton:hover {
+        transition: 0.3s;
+        background-color: #4d85ea;
+    }

@@ -2,6 +2,30 @@ window.onload = function init() {
     var xhttp = new this.XMLHttpRequest();
     var countryList = [];
     var activeCountry;
+
+    const States = {
+        Countries: 0,
+        Trending: 1,
+        Personalized: 2
+    }
+
+    var state = States.Trending;
+
+    var trendingButton = document.getElementById("trendingButton");
+    trendingButton.addEventListener("click", function () {
+        console.log(state);
+        switch (state) {
+            case States.Countries:
+                state = States.Trending;
+                trendingButton.innerText = "Hide trending artists";
+                break;
+
+            case States.Trending:
+                trendingButton.innerText = "Show trending artists";
+                state = States.Countries;
+                break;
+        }
+    });
     xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             let countries = JSON.parse(this.responseText).features;
@@ -12,7 +36,7 @@ window.onload = function init() {
                 var col = randColor();
                 let polygons = [];
                 let count = 0;
-                let code = country.ISO_A2;
+                let code = country.properties.ISO_A2;
                 let center = { lat: 0, lng: 0 }
                 if (name == "Antarctica") return;
                 if (country.geometry.type == "Polygon") {
@@ -98,9 +122,45 @@ window.onload = function init() {
                 })
                 polygons.forEach(function (polygon) {
                     google.maps.event.addListener(polygon, "click", function () {
-                        if (activeCountry != undefined) activeCountry.info.close();
+                        if (activeCountry != null) activeCountry.info.close();
                         activeCountry = countryList[name];
-                        info.open(map);
+                        console.log(name);
+                        console.log(code);
+                        console.log(country);
+                        switch (state) {
+                            case States.Trending:
+                                if (activeCountry.artist != null) {
+                                    let artist_name = activeCountry["artist"]["artist_name"];
+                                    console.log("Already fetched...");
+                                    console.log(artist_name);
+                                    info.setContent(`<div>${name}<br>Now trending: <strong>${artist_name}</strong></div>`);
+                                    info.open(map);
+                                }
+                                else {
+                                    console.log("Fetching...");
+                                    fetch('api/Info/Artist?country=' + code).then(resp => {
+                                        resp.json().then(data => {
+                                            if (data["message"]["body"]["artist_list"][0] == null) {
+                                                info.setContent(`<div>${name}<br>No data about this country.</div>`);
+                                                info.open(map);
+                                            }
+                                            else {
+                                                data = data["message"]["body"]["artist_list"][0]["artist"];
+                                                activeCountry["artist"] = data;
+                                                let artist_name = data["artist_name"];
+                                                console.log(artist_name);
+                                                info.setContent(`<div>${name}<br>Now trending: <strong>${artist_name}</strong></div>`);
+                                                info.open(map);
+                                            }                                            
+                                        });
+                                    });
+                                }
+                                break;
+                            case States.Countries:
+                                info.setContent(`<div>${name}</div>`);
+                                info.open(map);
+                                break;
+                        }
                     });
                 });
 
@@ -111,12 +171,13 @@ window.onload = function init() {
                     center: center,
                     info: info,
                     code: code,
+                    artist: null,
                 };
             });
         }
     };
 
-    xhttp.open("GET", "50m_30p_geo.json", true);
+    xhttp.open("GET", "50m_30p_geo_hd.json", true);
     xhttp.send();
 
     function randColor() {
