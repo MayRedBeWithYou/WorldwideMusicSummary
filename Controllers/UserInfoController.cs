@@ -5,7 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
+using WorldwideMusicSummary.Models;
 
 namespace WorldwideMusicSummary.Controllers
 {
@@ -13,38 +16,81 @@ namespace WorldwideMusicSummary.Controllers
     [ApiController]
     public class UserInfoController : Controller
     {
-        string client_id = "cae005557504459cb66c997fb0aa84f4";
-        string client_secret = "853cf78ce33f4caa8386cce4028c836b";
-        //string redirect_uri = "https%3A%2F%2Flocalhost%3A5001%2FMain";
-        string redirect_uri = "https://localhost:5001/Main";
-        string scope = "user-read-private user-read-email playlist-read-private";
-        string stateKey = "spotify_auth_state";
+        private readonly UserContext _context;
+        private string client_id = "cae005557504459cb66c997fb0aa84f4";
+        private string client_secret = "853cf78ce33f4caa8386cce4028c836b";
+        private string redirect_uri = "https://localhost:5001/Main";
+        private string scope = "user-read-private user-read-email playlist-read-private";
+        private string state = "spotify_auth_state";
 
-        // RestClient client = new RestClient("https://accounts.spotify.com/authorize?client_id=cae005557504459cb66c997fb0aa84f4&scopes=playlist-read-private&response_type=code&redirect_uri=https%3A%2F%2Flocalhost%3A5001%2FMain");
+        public UserInfoController(UserContext context)
+        {
+            _context = context;
+        }
 
-        string clientToken;
+        string access_token;
+        string refresh_token;
+        string scopeKey;
+        long expires_in;
 
         [HttpGet("{main, code}")]
-        public ActionResult GetAuthorizationToken(string code)
+        public async Task<IActionResult> GetAuthorizationToken(string code)
         {
-            if(string.IsNullOrEmpty(clientToken))
+            if(string.IsNullOrEmpty(access_token))
             {
 
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
-                request.AddUrlSegment("Authorization", "Basic " + (new StringBuilder(client_id + ':' + client_secret).ToString()));
+                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
                 request.AddParameter("grant_type", "authorization_code");
-                request.AddUrlSegment("code", code);
-                request.AddUrlSegment("redirect_uri", redirect_uri);
-                //request.AddUrlSegment("state", GenerateRandomString(6));
+                request.AddParameter("code", code);
+                request.AddParameter("redirect_uri", redirect_uri);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-                //var response = client.Get(request);
                 IRestResponse response = client.Execute(request);
-                string parsed = response.Content;
+                Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
+                access_token = (string)values["access_token"];
+                refresh_token = (string)values["refresh_token"];
+                scopeKey = (string)values["scope"];
+                expires_in = (long)values["expires_in"];
+                
+                string userCookie = GenerateRandomString(10);
+                Response.Cookies.Append("userCookie", userCookie);
 
+                Session session = new Session()
+                {
+                    UserCookie = userCookie,
+                    Access_token = access_token,
+                    Refresh_token = refresh_token,
+                    Expires_in = expires_in,
+                    Date = DateTime.Now
+                };
+                _context.Sessions.Add(session);
+                await _context.SaveChangesAsync();             
             }
             return Redirect("home.html");
-            //return Json(response.Content);
+        }
+
+        [Route("Refresh")]
+        [HttpGet]
+        public async void GetRefreshedAccessToken()
+        {
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+           
+            if (session.Date.AddSeconds(session.Expires_in) < DateTime.Now)
+            {
+                RestClient client = new RestClient("https://accounts.spotify.com/api/token");
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
+                request.AddParameter("grant_type", "refresh_token");
+                request.AddParameter("refresh_token", session.Refresh_token);
+                request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+                IRestResponse response = client.Execute(request);
+                Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
+
+                session.Access_token = (string)values["access_token"];
+                session.Date = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
         }
 
         public string GenerateRandomString(int length) 
