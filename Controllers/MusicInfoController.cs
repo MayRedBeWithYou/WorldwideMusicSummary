@@ -27,7 +27,6 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("page_size", "1");
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", key);
-            request.AddHeader("Accept", "text/xml");
             var response = client.Get(request);
             string parsed = response.Content.Substring(3, response.Content.Length - 6);
 
@@ -45,7 +44,6 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("page_size", "1");
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", key);
-            request.AddHeader("Accept", "text/xml");
             var response = client.Get(request);
             string parsed = response.Content.Substring(2, response.Content.Length - 4);
 

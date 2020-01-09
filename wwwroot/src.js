@@ -21,11 +21,17 @@ window.onload = function init() {
 
     fetch("Top/Tracks").then(resp => {
         resp.json().then(data => {
-            var a = document.createElement('a');
-            a.text = "Show my top track";
-            a.href = data["items"][0]["preview_url"];
-            document.getElementById('menuPanel').appendChild(a);
-            console.log(data["items"][0]["name"]);
+            var fav = document.getElementById("fav");
+            let song = data["items"][3];
+            let name = song['name'];
+            let artist = song['artists'][0]['name'];
+            fav.innerHTML = `Your favourite song: ${artist} - <strong>${name}</strong>`
+            var playButton = document.createElement("audio");
+            playButton.src = song["preview_url"];
+            playButton.controls = 'controls';
+            playButton.type = 'audio/mpeg';
+            document.getElementById('menuPanel').appendChild(playButton);
+            console.log(song["name"]);
             console.log(data);
         });
     });

@@ -27,8 +27,9 @@ namespace WorldwideMusicSummary.Controllers
             _context = context;
         }
 
-        [HttpGet("{main, code}")]
-        public async Task<IActionResult> GetAuthorizationToken(string code)
+        [Route("Main")]
+        [HttpGet("{code}")]
+        public async Task<IActionResult> GetAuthorizationToken([FromQuery] string code)
         {
             Session session = _context.Sessions.SingleOrDefault(c => c.UserCookie == Request.Cookies["UserCookie"]);
             if (session == null || session.Access_token == null)
@@ -74,7 +75,7 @@ namespace WorldwideMusicSummary.Controllers
                 }
                 await _context.SaveChangesAsync();
             }
-            return Redirect("~/home.html");
+            return Redirect("home.html");
         }
 
         [Route("Refresh")]
@@ -88,7 +89,6 @@ namespace WorldwideMusicSummary.Controllers
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
-                //request.AddParameter("scope", scope);
                 request.AddParameter("grant_type", "refresh_token");
                 request.AddParameter("refresh_token", session.Refresh_token);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
