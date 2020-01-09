@@ -20,6 +20,7 @@ namespace WorldwideMusicSummary.Controllers
         private string client_id = "cae005557504459cb66c997fb0aa84f4";
         private string client_secret = "853cf78ce33f4caa8386cce4028c836b";
         private string redirect_uri = "https://localhost:5001/Main";
+        private string scope = "user-read-private user-read-email playlist-read-private user-top-read"; //user-read-privat
 
         public UserInfoController(UserContext context)
         {
@@ -35,6 +36,7 @@ namespace WorldwideMusicSummary.Controllers
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
+                request.AddParameter("scope", scope);
                 request.AddParameter("grant_type", "authorization_code");
                 request.AddParameter("code", code);
                 request.AddParameter("redirect_uri", redirect_uri);
@@ -86,6 +88,7 @@ namespace WorldwideMusicSummary.Controllers
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
+                //request.AddParameter("scope", scope);
                 request.AddParameter("grant_type", "refresh_token");
                 request.AddParameter("refresh_token", session.Refresh_token);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -108,7 +111,22 @@ namespace WorldwideMusicSummary.Controllers
             request.AddHeader("Authorization", "Bearer " + session.Access_token);
             request.AddParameter("scope", "user-read-private");
             var response = client.Execute(request);
-            response = client.Execute(request);
+
+            return response.Content;
+        }
+
+        [Route("Top/Tracks")]
+        [HttpGet]
+        public string GetUsersTopTracks()
+        {
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
+            RestRequest request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", "Bearer " + session.Access_token);
+            request.AddQueryParameter("limit", "50");
+            request.AddQueryParameter("time_range", "medium_term");
+            var response = client.Execute(request);
+
             return response.Content;
         }
 

@@ -19,6 +19,17 @@ window.onload = function init() {
         });
     });
 
+    fetch("Top/Tracks").then(resp => {
+        resp.json().then(data => {
+            var a = document.createElement('a');
+            a.text = "Show my top track";
+            a.href = data["items"][0]["preview_url"];
+            document.getElementById('menuPanel').appendChild(a);
+            console.log(data["items"][0]["name"]);
+            console.log(data);
+        });
+    });
+
     var trendingButton = document.getElementById("trendingButton");
     trendingButton.addEventListener("click", function () {
         console.log(state);
