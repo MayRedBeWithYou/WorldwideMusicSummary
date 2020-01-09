@@ -27,6 +27,9 @@ namespace WorldwideMusicSummary
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //This will take any Configuration values (including those found in our User Secrets) and bind them to matching properties in MusicApiSecrets class.
+            services.Configure<MusicApiSecrets>(options => Configuration.Bind(options));
+
             services.AddDbContext<UserContext>(opt => opt.UseInMemoryDatabase("Database"));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }

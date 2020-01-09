@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
@@ -17,14 +18,13 @@ namespace WorldwideMusicSummary.Controllers
     public class UserInfoController : Controller
     {
         private readonly UserContext _context;
-        private string client_id = "cae005557504459cb66c997fb0aa84f4";
-        private string client_secret = "853cf78ce33f4caa8386cce4028c836b";
-        private string redirect_uri = "https://localhost:5001/Main";
         private string scope = "user-read-private user-read-email playlist-read-private user-top-read"; //user-read-privat
+        private readonly IOptions<MusicApiSecrets> _options;
 
-        public UserInfoController(UserContext context)
+        public UserInfoController(UserContext context, IOptions<MusicApiSecrets> options)
         {
             _context = context;
+            _options = options;
         }
 
         [Route("Main")]
@@ -36,11 +36,11 @@ namespace WorldwideMusicSummary.Controllers
             {
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
+                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(_options.Value.Client_id + ":" + _options.Value.Client_secret).ToString())));
                 request.AddParameter("scope", scope);
                 request.AddParameter("grant_type", "authorization_code");
                 request.AddParameter("code", code);
-                request.AddParameter("redirect_uri", redirect_uri);
+                request.AddParameter("redirect_uri", _options.Value.Redirect_uri);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
                 IRestResponse response = client.Execute(request);
                 Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
@@ -88,7 +88,7 @@ namespace WorldwideMusicSummary.Controllers
             {
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
+                request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(_options.Value.Client_id + ":" + _options.Value.Client_secret).ToString())));
                 request.AddParameter("grant_type", "refresh_token");
                 request.AddParameter("refresh_token", session.Refresh_token);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
