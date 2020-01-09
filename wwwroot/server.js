@@ -1,4 +1,0 @@
-﻿window.onload = function init() {
-
-
-}

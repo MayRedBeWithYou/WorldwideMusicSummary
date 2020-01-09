@@ -20,25 +20,18 @@ namespace WorldwideMusicSummary.Controllers
         private string client_id = "cae005557504459cb66c997fb0aa84f4";
         private string client_secret = "853cf78ce33f4caa8386cce4028c836b";
         private string redirect_uri = "https://localhost:5001/Main";
-        private string scope = "user-read-private user-read-email playlist-read-private";
-        private string state = "spotify_auth_state";
 
         public UserInfoController(UserContext context)
         {
             _context = context;
         }
 
-        string access_token;
-        string refresh_token;
-        string scopeKey;
-        long expires_in;
-
         [HttpGet("{main, code}")]
         public async Task<IActionResult> GetAuthorizationToken(string code)
         {
-            if(string.IsNullOrEmpty(access_token))
+            Session session = _context.Sessions.SingleOrDefault(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            if (session == null || session.Access_token == null)
             {
-
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes(new StringBuilder(client_id + ":" + client_secret).ToString())));
@@ -48,26 +41,38 @@ namespace WorldwideMusicSummary.Controllers
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
                 IRestResponse response = client.Execute(request);
                 Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
-                access_token = (string)values["access_token"];
-                refresh_token = (string)values["refresh_token"];
-                scopeKey = (string)values["scope"];
-                expires_in = (long)values["expires_in"];
-                
+                string access_token = (string)values["access_token"];
+                string refresh_token = (string)values["refresh_token"];
+                string scopeKey = (string)values["scope"];
+                long expires_in = (long)values["expires_in"];
+
                 string userCookie = GenerateRandomString(10);
                 Response.Cookies.Append("userCookie", userCookie);
 
-                Session session = new Session()
+                if (session == null)
                 {
-                    UserCookie = userCookie,
-                    Access_token = access_token,
-                    Refresh_token = refresh_token,
-                    Expires_in = expires_in,
-                    Date = DateTime.Now
-                };
-                _context.Sessions.Add(session);
-                await _context.SaveChangesAsync();             
+                    session = new Session()
+                    {
+                        UserCookie = userCookie,
+                        Access_token = access_token,
+                        Refresh_token = refresh_token,
+                        Expires_in = expires_in,
+                        Date = DateTime.Now
+                    };
+                    _context.Sessions.Add(session);
+                }
+                else
+                {
+                    session.UserCookie = userCookie;
+                    session.Access_token = access_token;
+                    session.Refresh_token = refresh_token;
+                    session.Expires_in = expires_in;
+                    session.Date = DateTime.Now;
+                    _context.Sessions.Update(session);
+                }
+                await _context.SaveChangesAsync();
             }
-            return Redirect("home.html");
+            return Redirect("~/home.html");
         }
 
         [Route("Refresh")]
@@ -75,7 +80,7 @@ namespace WorldwideMusicSummary.Controllers
         public async void GetRefreshedAccessToken()
         {
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
-           
+
             if (session.Date.AddSeconds(session.Expires_in) < DateTime.Now)
             {
                 RestClient client = new RestClient("https://accounts.spotify.com/api/token");
@@ -93,14 +98,28 @@ namespace WorldwideMusicSummary.Controllers
             }
         }
 
-        public string GenerateRandomString(int length) 
+        [Route("Info/User")]
+        [HttpGet]
+        public string GetUserInfo()
         {
-           StringBuilder text = new StringBuilder(length);
-           string possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            RestClient client = new RestClient("https://api.spotify.com/v1/me");
+            RestRequest request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", "Bearer " + session.Access_token);
+            request.AddParameter("scope", "user-read-private");
+            var response = client.Execute(request);
+            response = client.Execute(request);
+            return response.Content;
+        }
+
+        public string GenerateRandomString(int length)
+        {
+            StringBuilder text = new StringBuilder(length);
+            string possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             Random random = new Random();
-           for (int i = 0; i<length; i++) 
+            for (int i = 0; i < length; i++)
             {
-                text.Append(possible[random.Next(0, possible.Length-1)]);
+                text.Append(possible[random.Next(0, possible.Length - 1)]);
             }
             return text.ToString();
         }

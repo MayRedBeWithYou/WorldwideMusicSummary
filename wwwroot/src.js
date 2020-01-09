@@ -11,6 +11,14 @@ window.onload = function init() {
 
     var state = States.Trending;
 
+    var welcomeText = document.getElementById("welcomeText");
+
+    fetch("Info/User").then(resp => {
+        resp.json().then(data => {
+            welcomeText.innerText = "Hello, " + data["display_name"];
+        });
+    });
+
     var trendingButton = document.getElementById("trendingButton");
     trendingButton.addEventListener("click", function () {
         console.log(state);

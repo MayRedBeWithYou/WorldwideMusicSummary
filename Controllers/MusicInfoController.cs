@@ -9,8 +9,6 @@ using RestSharp;
 
 namespace WorldwideMusicSummary.Controllers
 {
-
-
     [Route("api/Info")]
     [ApiController]
     public class MusicInfoController : Controller
@@ -32,7 +30,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddHeader("Accept", "text/xml");
             var response = client.Get(request);
             string parsed = response.Content.Substring(3, response.Content.Length - 6);
-            
+
             return parsed;
         }
 
