@@ -18,8 +18,8 @@ namespace WorldwideMusicSummary.Controllers
     public class UserInfoController : Controller
     {
         private readonly UserContext _context;
-        private string scope = "user-read-private user-read-email playlist-read-private user-top-read"; //user-read-privat
         private readonly IOptions<MusicApiSecrets> _options;
+        private string scope = "user-read-private user-read-email playlist-read-private user-top-read";
 
         public UserInfoController(UserContext context, IOptions<MusicApiSecrets> options)
         {
@@ -42,12 +42,8 @@ namespace WorldwideMusicSummary.Controllers
                 request.AddParameter("code", code);
                 request.AddParameter("redirect_uri", _options.Value.Redirect_uri);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-                IRestResponse response = client.Execute(request);
-                Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
-                string access_token = (string)values["access_token"];
-                string refresh_token = (string)values["refresh_token"];
-                string scopeKey = (string)values["scope"];
-                long expires_in = (long)values["expires_in"];
+                var response = client.Execute(request);
+                UserAccessTokens accessTokens = JsonConvert.DeserializeObject<UserAccessTokens>(response.Content);
 
                 string userCookie = GenerateRandomString(10);
                 Response.Cookies.Append("userCookie", userCookie);
@@ -57,9 +53,10 @@ namespace WorldwideMusicSummary.Controllers
                     session = new Session()
                     {
                         UserCookie = userCookie,
-                        Access_token = access_token,
-                        Refresh_token = refresh_token,
-                        Expires_in = expires_in,
+                        Access_token = accessTokens.Access_token,
+                        Token_type = accessTokens.Token_type,
+                        Refresh_token = accessTokens.Refresh_token,
+                        Expires_in = accessTokens.Expires_in,
                         Date = DateTime.Now
                     };
                     _context.Sessions.Add(session);
@@ -67,9 +64,10 @@ namespace WorldwideMusicSummary.Controllers
                 else
                 {
                     session.UserCookie = userCookie;
-                    session.Access_token = access_token;
-                    session.Refresh_token = refresh_token;
-                    session.Expires_in = expires_in;
+                    session.Access_token = accessTokens.Access_token;
+                    session.Token_type = accessTokens.Token_type;
+                    session.Refresh_token = accessTokens.Refresh_token;
+                    session.Expires_in = accessTokens.Expires_in;
                     session.Date = DateTime.Now;
                     _context.Sessions.Update(session);
                 }
@@ -92,10 +90,11 @@ namespace WorldwideMusicSummary.Controllers
                 request.AddParameter("grant_type", "refresh_token");
                 request.AddParameter("refresh_token", session.Refresh_token);
                 request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
-                IRestResponse response = client.Execute(request);
-                Dictionary<string, object> values = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Content);
+                var response = client.Execute(request);
+                UserAccessTokens accessTokens = JsonConvert.DeserializeObject<UserAccessTokens>(response.Content);
 
-                session.Access_token = (string)values["access_token"];
+                session.Access_token = accessTokens.Access_token;
+                session.Token_type = accessTokens.Token_type;
                 session.Date = DateTime.Now;
                 await _context.SaveChangesAsync();
             }
@@ -108,7 +107,7 @@ namespace WorldwideMusicSummary.Controllers
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me");
             RestRequest request = new RestRequest(Method.GET);
-            request.AddHeader("Authorization", "Bearer " + session.Access_token);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
             request.AddParameter("scope", "user-read-private");
             var response = client.Execute(request);
 
@@ -122,7 +121,7 @@ namespace WorldwideMusicSummary.Controllers
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
             RestRequest request = new RestRequest(Method.GET);
-            request.AddHeader("Authorization", "Bearer " + session.Access_token);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
             request.AddQueryParameter("limit", "50");
             request.AddQueryParameter("time_range", "medium_term");
             var response = client.Execute(request);
