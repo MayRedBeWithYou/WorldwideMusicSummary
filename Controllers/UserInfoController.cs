@@ -126,6 +126,8 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("time_range", "medium_term");
             var response = client.Execute(request);
 
+            TopTracksObject tracksList = JsonConvert.DeserializeObject<TopTracksObject>(response.Content);
+
             return response.Content;
         }
 
