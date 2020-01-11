@@ -1,5 +1,4 @@
 window.onload = function init() {
-    var xhttp = new this.XMLHttpRequest();
     var countryList = [];
     var activeCountry;
 
@@ -21,16 +20,21 @@ window.onload = function init() {
 
     fetch("Top/Tracks").then(resp => {
         resp.json().then(data => {
-            var fav = document.getElementById("fav");
-            let name = data['PL']['song']['name'];
-            let artist = data['PL']['name'];
+            for (let key in data) {
+                data = data[key];
+                break;
+            }
+            let fav = document.getElementById("fav");
+            let name = data['song']['name'];
+            let artist = data['name'];
             fav.innerHTML = `Your favourite song: ${artist} - <strong>${name}</strong>`
-            var playButton = document.createElement("audio");
-            playButton.src = data['PL']['song']['preview_url'];
+            let playButton = document.createElement("audio");
+            playButton.src = data['song']['preview_url'];
             playButton.controls = 'controls';
             playButton.type = 'audio/mpeg';
             document.getElementById('menuPanel').appendChild(playButton);
             console.log(data);
+            console.log(data[0]);
         });
     });
 
@@ -49,9 +53,10 @@ window.onload = function init() {
                 break;
         }
     });
-    xhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && this.status == 200) {
-            let countries = JSON.parse(this.responseText).features;
+
+    fetch("50m_30p_geo_hd.json", { method: "GET" }).then(resp => {
+        if (resp.status == 200) resp.json().then(data => {
+            let countries = data.features;
             countryList = [];
             countries.forEach(function (country) {
                 let name = country.properties.NAME_EN;
@@ -174,7 +179,7 @@ window.onload = function init() {
                                                 console.log(artist_name);
                                                 info.setContent(`<div>${name}<br>Now trending: <strong>${artist_name}</strong></div>`);
                                                 info.open(map);
-                                            }                                            
+                                            }
                                         });
                                     });
                                 }
@@ -197,11 +202,9 @@ window.onload = function init() {
                     artist: null,
                 };
             });
-        }
-    };
+        });
+    });
 
-    xhttp.open("GET", "50m_30p_geo_hd.json", true);
-    xhttp.send();
 
     function randColor() {
         var letters = '0123456789ABCDEF';

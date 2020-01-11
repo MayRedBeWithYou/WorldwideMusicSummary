@@ -11,10 +11,10 @@ namespace WorldwideMusicSummary.Models
         public string Name { get; set; }
         public string Country { get; set; }
         public int Counter { get; set; }
-        public UsersFavouriteSong Song { get; set; }
+        public UserTrack Song { get; set; }
     }
 
-    public class UsersFavouriteSong
+    public class UserTrack
     {
         public string Name { get; set; }
         public List<Image> Images { get; set; }

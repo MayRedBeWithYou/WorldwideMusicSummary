@@ -48,32 +48,45 @@ namespace WorldwideMusicSummary.Controllers
                 string userCookie = GenerateRandomString(10);
                 Response.Cookies.Append("userCookie", userCookie);
 
+                client.BaseUrl = new Uri("https://api.spotify.com/v1/me");
+                request = new RestRequest(Method.GET);
+                request.AddHeader("Authorization", accessTokens.Token_type + " " + accessTokens.Access_token);
+                response = client.Execute(request);
+
+                UserInfo info = JsonConvert.DeserializeObject<UserInfo>(response.Content);
+
                 if (session == null)
                 {
                     session = new Session()
                     {
+                        SpotifyId = info.Id,
+                        Display_name = info.Display_name,
                         UserCookie = userCookie,
                         Access_token = accessTokens.Access_token,
                         Token_type = accessTokens.Token_type,
                         Refresh_token = accessTokens.Refresh_token,
                         Expires_in = accessTokens.Expires_in,
+                        Market = info.Country,
                         Date = DateTime.Now
                     };
                     _context.Sessions.Add(session);
                 }
                 else
                 {
+                    session.SpotifyId = info.Id;
+                    session.Display_name = info.Display_name;
                     session.UserCookie = userCookie;
                     session.Access_token = accessTokens.Access_token;
                     session.Token_type = accessTokens.Token_type;
                     session.Refresh_token = accessTokens.Refresh_token;
                     session.Expires_in = accessTokens.Expires_in;
+                    session.Market = info.Country;
                     session.Date = DateTime.Now;
                     _context.Sessions.Update(session);
                 }
                 await _context.SaveChangesAsync();
             }
-            return RedirectToAction("Home","Home");
+            return RedirectToAction("Home", "Home");
         }
 
         [Route("Refresh")]
@@ -126,23 +139,36 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("time_range", "medium_term");
             var response = client.Execute(request);
 
-            TopTracksObject tracksList = JsonConvert.DeserializeObject<TopTracksObject>(response.Content);
-            List<Item> tracksItems = tracksList.items;
-            Dictionary<string,ArtistInfo> topTracks = new Dictionary<string, ArtistInfo>();
-            for (int i = 0; i < tracksItems.Count; ++i)
+            TopTracks tracksList = JsonConvert.DeserializeObject<TopTracks>(response.Content);
+            List<Track> tracks = tracksList.items;
+            string[] trackIds = tracks.Select(x => x.id).ToArray();
+
+            client.BaseUrl = new Uri("https://api.spotify.com/v1/tracks");
+
+            request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            string ids = String.Join(",", trackIds);
+            request.AddQueryParameter("ids", ids);
+            request.AddQueryParameter("market", session.Market);
+            response = client.Execute(request);
+
+            tracks = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks;
+
+            Dictionary<string, ArtistInfo> topTracks = new Dictionary<string, ArtistInfo>();
+            for (int i = 0; i < tracks.Count; ++i)
             {
-                if(!topTracks.ContainsKey(tracksItems[i].external_ids.isrc.Substring(0, 2)))
+                if (!topTracks.ContainsKey(tracks[i].external_ids.isrc.Substring(0, 2)))
                 {
-                    topTracks.Add(tracksItems[i].external_ids.isrc.Substring(0, 2), new ArtistInfo()
+                    topTracks.Add(tracks[i].external_ids.isrc.Substring(0, 2), new ArtistInfo()
                     {
-                        Id = tracksItems[i].external_ids.isrc.Substring(0, 2) + tracksItems[i].artists[0].name,
-                        Name = tracksItems[i].artists[0].name,
-                        Country = tracksItems[i].external_ids.isrc.Substring(0, 2),
-                        Song = new UsersFavouriteSong()
+                        Id = tracks[i].external_ids.isrc.Substring(0, 2) + tracks[i].artists[0].name,
+                        Name = tracks[i].artists[0].name,
+                        Country = tracks[i].external_ids.isrc.Substring(0, 2),
+                        Song = new UserTrack()
                         {
-                            Name = tracksItems[i].name,
-                            Images = tracksItems[i].images,
-                            Preview_url = tracksItems[i].preview_url
+                            Name = tracks[i].name,
+                            Images = tracks[i].album.images,
+                            Preview_url = tracks[i].preview_url
                         }
                     });
                 }
@@ -162,7 +188,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("time_range", "medium_term");
             var response = client.Execute(request);
 
-            TopTracksObject tracksList = JsonConvert.DeserializeObject<TopTracksObject>(response.Content);
+            TopTracks tracksList = JsonConvert.DeserializeObject<TopTracks>(response.Content);
 
             Dictionary<string, ArtistInfo> artists = new Dictionary<string, ArtistInfo>();
             var items = tracksList.items;
@@ -181,10 +207,10 @@ namespace WorldwideMusicSummary.Controllers
                         Name = items[i].artists[0].name,
                         Country = items[i].external_ids.isrc.Substring(0, 2),
                         Counter = 1,
-                        Song = new UsersFavouriteSong()
+                        Song = new UserTrack()
                         {
                             Name = items[i].name,
-                            Images = items[i].images,
+                            Images = items[i].album.images,
                             Preview_url = items[i].preview_url
                         }
                     });
