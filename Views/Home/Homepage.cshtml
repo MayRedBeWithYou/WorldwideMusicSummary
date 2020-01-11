@@ -1,4 +1,9 @@
-﻿<!DOCTYPE html>
+﻿@model string
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -36,7 +41,6 @@
             });
         }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDJYK-uHUgTlSFiwrsIHY5q-0DN3K-wD5A&callback=initMap"
-            async defer></script>
+    <script src=@Model async defer></script>
 </body>
 </html>

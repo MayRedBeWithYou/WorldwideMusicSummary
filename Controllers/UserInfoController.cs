@@ -73,7 +73,7 @@ namespace WorldwideMusicSummary.Controllers
                 }
                 await _context.SaveChangesAsync();
             }
-            return Redirect("home.html");
+            return RedirectToAction("Home","Home");
         }
 
         [Route("Refresh")]

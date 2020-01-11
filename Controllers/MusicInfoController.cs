@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using RestSharp;
+using WorldwideMusicSummary.Models;
 
 namespace WorldwideMusicSummary.Controllers
 {
@@ -13,8 +15,14 @@ namespace WorldwideMusicSummary.Controllers
     [ApiController]
     public class MusicInfoController : Controller
     {
-        string key = "688976bfb8d7057f3692c0d977e8a68f";
         RestClient client = new RestClient("https://api.musixmatch.com/ws/1.1/");
+
+        private readonly IOptions<MusicApiSecrets> _options;
+
+        public MusicInfoController(IOptions<MusicApiSecrets> options)
+        {
+            _options = options;
+        }
 
         [Route("Track")]
         [HttpGet]
@@ -26,7 +34,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("page", "1");
             request.AddQueryParameter("page_size", "1");
             request.AddQueryParameter("country", country);
-            request.AddQueryParameter("apikey", key);
+            request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);
             string parsed = response.Content.Substring(3, response.Content.Length - 6);
 
@@ -43,7 +51,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("page", "1");
             request.AddQueryParameter("page_size", "1");
             request.AddQueryParameter("country", country);
-            request.AddQueryParameter("apikey", key);
+            request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);
             string parsed = response.Content.Substring(2, response.Content.Length - 4);
 
