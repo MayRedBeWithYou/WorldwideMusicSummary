@@ -86,12 +86,14 @@ namespace WorldwideMusicSummary.Controllers
                 }
                 await _context.SaveChangesAsync();
             }
+            else await GetRefreshedAccessToken();
+
             return RedirectToAction("Home", "Home");
         }
 
         [Route("Refresh")]
         [HttpGet]
-        public async void GetRefreshedAccessToken()
+        public async Task<ActionResult> GetRefreshedAccessToken()
         {
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
 
@@ -111,6 +113,7 @@ namespace WorldwideMusicSummary.Controllers
                 session.Date = DateTime.Now;
                 await _context.SaveChangesAsync();
             }
+            return StatusCode(200);
         }
 
         [Route("Info/User")]
@@ -157,13 +160,15 @@ namespace WorldwideMusicSummary.Controllers
             Dictionary<string, ArtistInfo> topTracks = new Dictionary<string, ArtistInfo>();
             for (int i = 0; i < tracks.Count; ++i)
             {
-                if (!topTracks.ContainsKey(tracks[i].external_ids.isrc.Substring(0, 2)))
+                string code = tracks[i].external_ids.isrc.Substring(0, 2);
+                if (code == "QM" || code == "QZ") code = "US";
+
+                if (!topTracks.ContainsKey(code))
                 {
-                    topTracks.Add(tracks[i].external_ids.isrc.Substring(0, 2), new ArtistInfo()
+                    topTracks.Add(code, new ArtistInfo()
                     {
-                        Id = tracks[i].external_ids.isrc.Substring(0, 2) + tracks[i].artists[0].name,
                         Name = tracks[i].artists[0].name,
-                        Country = tracks[i].external_ids.isrc.Substring(0, 2),
+                        Country = code,
                         Song = new UserTrack()
                         {
                             Name = tracks[i].name,
@@ -171,6 +176,7 @@ namespace WorldwideMusicSummary.Controllers
                             Preview_url = tracks[i].preview_url
                         }
                     });
+
                 }
             }
             return Json(topTracks);

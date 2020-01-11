@@ -51,3 +51,16 @@
         transition: 0.3s;
         background-color: #4d85ea;
     }
+
+.songData {
+    display: flex;
+    width: max-content;
+    white-space: nowrap;
+}
+
+.column {
+    flex: 1;
+    padding: 4px;
+    align-self: center;
+    font-size: 1.2em;
+}
