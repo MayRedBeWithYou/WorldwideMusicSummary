@@ -22,16 +22,14 @@ window.onload = function init() {
     fetch("Top/Tracks").then(resp => {
         resp.json().then(data => {
             var fav = document.getElementById("fav");
-            let song = data["items"][3];
-            let name = song['name'];
-            let artist = song['artists'][0]['name'];
+            let name = data['PL']['song']['name'];
+            let artist = data['PL']['name'];
             fav.innerHTML = `Your favourite song: ${artist} - <strong>${name}</strong>`
             var playButton = document.createElement("audio");
-            playButton.src = song["preview_url"];
+            playButton.src = data['PL']['song']['preview_url'];
             playButton.controls = 'controls';
             playButton.type = 'audio/mpeg';
             document.getElementById('menuPanel').appendChild(playButton);
-            console.log(song["name"]);
             console.log(data);
         });
     });

@@ -116,7 +116,43 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Top/Tracks")]
         [HttpGet]
-        public string GetUsersTopTracks()
+        public JsonResult GetUsersTopTracks()
+        {
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
+            RestRequest request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            request.AddQueryParameter("limit", "50");
+            request.AddQueryParameter("time_range", "medium_term");
+            var response = client.Execute(request);
+
+            TopTracksObject tracksList = JsonConvert.DeserializeObject<TopTracksObject>(response.Content);
+            List<Item> tracksItems = tracksList.items;
+            Dictionary<string,ArtistInfo> topTracks = new Dictionary<string, ArtistInfo>();
+            for (int i = 0; i < tracksItems.Count; ++i)
+            {
+                if(!topTracks.ContainsKey(tracksItems[i].external_ids.isrc.Substring(0, 2)))
+                {
+                    topTracks.Add(tracksItems[i].external_ids.isrc.Substring(0, 2), new ArtistInfo()
+                    {
+                        Id = tracksItems[i].external_ids.isrc.Substring(0, 2) + tracksItems[i].artists[0].name,
+                        Name = tracksItems[i].artists[0].name,
+                        Country = tracksItems[i].external_ids.isrc.Substring(0, 2),
+                        Song = new UsersFavouriteSong()
+                        {
+                            Name = tracksItems[i].name,
+                            Images = tracksItems[i].images,
+                            Preview_url = tracksItems[i].preview_url
+                        }
+                    });
+                }
+            }
+            return Json(topTracks);
+        }
+
+        [Route("Top/Artists")]
+        [HttpGet]
+        public JsonResult GetUsersTopArtistsTracks()
         {
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
@@ -128,7 +164,46 @@ namespace WorldwideMusicSummary.Controllers
 
             TopTracksObject tracksList = JsonConvert.DeserializeObject<TopTracksObject>(response.Content);
 
-            return response.Content;
+            Dictionary<string, ArtistInfo> artists = new Dictionary<string, ArtistInfo>();
+            var items = tracksList.items;
+            for (int i = 0; i < tracksList.items.Count; ++i)
+            {
+                string id = items[i].external_ids.isrc.Substring(0, 2) + items[i].artists[0].name;
+                if (artists.ContainsKey(id))
+                {
+                    ++artists[id].Counter;
+                }
+                else
+                {
+                    artists.Add(id, new ArtistInfo()
+                    {
+                        Id = id,
+                        Name = items[i].artists[0].name,
+                        Country = items[i].external_ids.isrc.Substring(0, 2),
+                        Counter = 1,
+                        Song = new UsersFavouriteSong()
+                        {
+                            Name = items[i].name,
+                            Images = items[i].images,
+                            Preview_url = items[i].preview_url
+                        }
+                    });
+                }
+            }
+
+            var sortedArtists = artists.ToList();
+
+            sortedArtists.Sort((pair1, pair2) => pair2.Value.Counter.CompareTo(pair1.Value.Counter));
+
+            Dictionary<string, ArtistInfo> topUsersArtists = new Dictionary<string, ArtistInfo>();
+            for (int i = 0; i < sortedArtists.Count; ++i)
+            {
+                if (!topUsersArtists.ContainsKey(sortedArtists[i].Value.Country))
+                {
+                    topUsersArtists.Add(sortedArtists[i].Key.Substring(0, 2), sortedArtists[i].Value);
+                }
+            }
+            return Json(topUsersArtists);
         }
 
         public string GenerateRandomString(int length)
