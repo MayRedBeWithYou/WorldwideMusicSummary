@@ -28,7 +28,7 @@
 .menuPanel {
     padding: 0 18px;
     background-color: white;
-    min-height: 60vh;
+    max-height: min-content;
     overflow: hidden;
 }
 
@@ -72,5 +72,12 @@
 
 #welcomeRow {
     display: flex;
-    padding-top: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+#refreshTrending {
+    margin-top: 10px;
+    float: right;
+    margin-bottom: 10px;
 }

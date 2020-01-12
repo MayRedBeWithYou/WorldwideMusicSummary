@@ -17,8 +17,13 @@ window.onload = function init() {
     var trackButton = document.getElementById("trackRadioButton");
     var artistButton = document.getElementById("artistRadioButton");
 
+    var refreshButton = document.getElementById("refreshTrending");
+    refreshButton.addEventListener("click", () => refreshTopTrending());
+
     trackButton.addEventListener("change", () => updatePersonalView(States.Tracks));
     artistButton.addEventListener("change", () => updatePersonalView(States.Artists));
+
+    refreshTopTrending();
 
     trendingTab.addEventListener("click", () => {
         if (state == States.Trending) return;
@@ -30,6 +35,8 @@ window.onload = function init() {
             activeCountry.info.close();
             if (activeCountry.preview != null) activeCountry.preview.pause();
         }
+
+        refreshTopTrending();
 
         for (let key in countryList) {
             let country = countryList[key];
@@ -133,20 +140,6 @@ window.onload = function init() {
                     });
 
                 }
-
-                //polygons.forEach(function (polygon, i) {
-                //    google.maps.event.addListener(polygon, "mouseover", function () {
-                //        polygons.forEach((p, tmp) => {
-                //            p.setOptions({ fillColor: "#FF0000" });
-                //        });
-                //    });
-
-                //    google.maps.event.addListener(polygon, "mouseout", function () {
-                //        polygons.forEach((p, tmp) => {
-                //            p.setOptions({ fillColor: col });
-                //        });
-                //    });
-                //});            
 
                 center.lng /= count;
                 center.lat /= count;
@@ -292,6 +285,22 @@ window.onload = function init() {
         return color;
     }
 
+    function refreshTopTrending() {
+        fetch('api/Info/Artist?country=WX&limit=5').then(resp => {
+            resp.json().then(data => {
+                data = data["message"]["body"]["artist_list"];
+                let topList = document.getElementById("trendingList");
+                topList.innerHTML = "<h3>Top trending artists:</h3>";
+                console.log(data);
+                for (let i = 0; i < data.length; i++) {
+                    let info = document.createElement("h4");
+                    info.innerText = `${i + 1}. ${data[i]["artist"]["artist_name"]}`;
+                    topList.appendChild(info);
+                }
+            });
+        });
+    }
+
     function setTrendingInfo(info) {
         let artistName = activeCountry["trending"]["artist"];
         let songName = activeCountry["trending"]["song"];
@@ -341,7 +350,6 @@ window.onload = function init() {
         if (state == States.Artists) url = "Top/Artists";
         fetch(url).then(resp => {
             resp.json().then(data => {
-
                 for (let key in countryList) {
                     let country = countryList[key];
                     country.polygons.forEach((p) => {

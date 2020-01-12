@@ -26,13 +26,13 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Track")]
         [HttpGet]
-        public string GetTrendingTrack([FromQuery] string country = "PL")
+        public string GetTrendingTrack([FromQuery] string country = "PL", [FromQuery] int limit = 1)
         {
             var request = new RestRequest("chart.tracks.get");
             request.AddQueryParameter("format", "jsonp");
             request.AddQueryParameter("callback", "c");
             request.AddQueryParameter("page", "1");
-            request.AddQueryParameter("page_size", "1");
+            request.AddQueryParameter("page_size", limit.ToString());
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);
@@ -43,13 +43,13 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Artist")]
         [HttpGet]
-        public string GetTrendingArtist([FromQuery] string country = "PL")
+        public string GetTrendingArtist([FromQuery] string country = "PL", [FromQuery] int limit = 1)
         {
             var request = new RestRequest("chart.artists.get");
             request.AddQueryParameter("format", "jsonp");
             request.AddQueryParameter("callback", "c");
             request.AddQueryParameter("page", "1");
-            request.AddQueryParameter("page_size", "1");
+            request.AddQueryParameter("page_size", limit.ToString());
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);

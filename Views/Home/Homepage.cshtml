@@ -32,24 +32,28 @@
                 </div>
                 <div id="fav"></div>
                 <ul class="nav nav-tabs">
-                    <li class="nav-item active"><a class="nav-link active" id="trendingTab" data-toggle="tab" href="#trending" role="tab" aria-controls="trending" aria-selected="true">Trending</a></li>
-                    <li class="nav-item"><a class="nav-link" id="personalTab" data-toggle="tab" href="#personal" role="tab" aria-controls="personal" aria-selected="false">Personal</a></li>
+                    <li class="nav-item active"><a class="nav-link active" id="trendingTab" data-toggle="tab" href="#trending" role="tab" aria-controls="trending" aria-selected="true">Now Trending</a></li>
+                    <li class="nav-item"><a class="nav-link" id="personalTab" data-toggle="tab" href="#personal" role="tab" aria-controls="personal" aria-selected="false">Personal Stats</a></li>
                 </ul>
                 <div class="tab-content" id="tabContent">
-                    <div class="tab-pane fade in active" id="trending">...</div>
+                    <div class="tab-pane fade in active" id="trending">
+                        <button class="btn btn-default" id="refreshTrending">Refresh list</button>
+                        <div id="trendingList">
+                        </div>
+                    </div>
                     <div class="tab-pane fade" id="personal">
                         <div class="radio">
                             <input type="radio" class="custom-control-input" id="trackRadioButton" name="personalRadioGroup" checked>
-                            <label class="personalOptions" for="trackRadioButton">Your top tracks from countries</label>
+                            <label class="personalOptions" for="trackRadioButton">Your top tracks by countries</label>
                         </div>
                         <div class="radio">
                             <input type="radio" class="custom-control-input" id="artistRadioButton" name="personalRadioGroup">
-                            <label class="personalOptions" for="artistRadioButton">Your top artists from countries</label>
+                            <label class="personalOptions" for="artistRadioButton">Your top artists by countries</label>
                         </div>
 
                     </div>
                 </div>
-            </div>                
+            </div>
         </div>
     </div>
     <div id="map"></div>
@@ -65,7 +69,17 @@
                 scaleControl: true,
                 streetViewControl: false,
                 rotateControl: false,
-                fullscreenControl: false
+                fullscreenControl: false,
+                maxZoom: 6,
+                minZoom: 2,
+                restriction: {
+                    latLngBounds: {
+                        north: 85,
+                        south: -85,
+                        west: -180,
+                        east: 180
+                    }
+                }
             });
         }
     </script>
