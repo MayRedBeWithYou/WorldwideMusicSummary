@@ -8,10 +8,13 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
-
+    <link href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="style.css" />
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script src="src.js" type="text/javascript"></script>
     <title>Worldwide Music Summary</title>
 </head>
@@ -19,13 +22,34 @@
     <div id="controlPanel">
         <div class="menu">
             <div id="menuPanel" class="menuPanel">
-                <h2 id="welcomeText"></h2>
+                <div id="welcomeRow">
+                    <div class="column">
+                        <img id="profilePicture" width="50" height="50" />
+                    </div>
+                    <div class="column">
+                        <h2 id="welcomeText">Hello...</h2>
+                    </div>
+                </div>
                 <div id="fav"></div>
                 <ul class="nav nav-tabs">
-                    <li id="trendingTab" class="active"><a>Trending</a></li>
-                    <li id="personalTab"><a>Personal</a></li>
+                    <li class="nav-item active"><a class="nav-link active" id="trendingTab" data-toggle="tab" href="#trending" role="tab" aria-controls="trending" aria-selected="true">Trending</a></li>
+                    <li class="nav-item"><a class="nav-link" id="personalTab" data-toggle="tab" href="#personal" role="tab" aria-controls="personal" aria-selected="false">Personal</a></li>
                 </ul>
-            </div>
+                <div class="tab-content" id="tabContent">
+                    <div class="tab-pane fade in active" id="trending">...</div>
+                    <div class="tab-pane fade" id="personal">
+                        <div class="radio">
+                            <input type="radio" class="custom-control-input" id="trackRadioButton" name="personalRadioGroup" checked>
+                            <label class="personalOptions" for="trackRadioButton">Your top tracks from countries</label>
+                        </div>
+                        <div class="radio">
+                            <input type="radio" class="custom-control-input" id="artistRadioButton" name="personalRadioGroup">
+                            <label class="personalOptions" for="artistRadioButton">Your top artists from countries</label>
+                        </div>
+
+                    </div>
+                </div>
+            </div>                
         </div>
     </div>
     <div id="map"></div>

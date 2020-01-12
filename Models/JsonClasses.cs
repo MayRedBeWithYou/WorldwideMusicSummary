@@ -7,6 +7,8 @@ namespace WorldwideMusicSummary.Models
     {
         public string id { get; set; }
         public string name { get; set; }
+        public List<Image> images { get; set; }
+        public string uri { get; set; }
     }
 
     public class Album
@@ -44,10 +46,24 @@ namespace WorldwideMusicSummary.Models
     {
         public List<Track> items { get; set; }
         public int total { get; set; }
+        public string previous { get; set; }
+        public string next { get; set; }
     }
 
     public class TrackList
     {
         public List<Track> tracks { get; set; }
+    }
+
+    public class ArtistList
+    {
+        [JsonProperty(PropertyName = "items")]
+        public List<Artist> artists { get; set; }
+    }
+
+    public class Response
+    {
+        public ArtistList artists { get; set; }
+        public TrackList tracks { get; set; }
     }
 }

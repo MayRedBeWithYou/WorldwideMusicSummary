@@ -36,7 +36,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);
-            string parsed = response.Content.Substring(3, response.Content.Length - 6);
+            string parsed = response.Content.Substring(2, response.Content.Length - 4);
 
             return parsed;
         }
@@ -53,6 +53,7 @@ namespace WorldwideMusicSummary.Controllers
             request.AddQueryParameter("country", country);
             request.AddQueryParameter("apikey", _options.Value.Musixmatch_key);
             var response = client.Get(request);
+            if (response.Content.Length < 4) return null;
             string parsed = response.Content.Substring(2, response.Content.Length - 4);
 
             return parsed;

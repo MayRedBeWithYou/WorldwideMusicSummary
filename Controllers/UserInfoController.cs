@@ -252,6 +252,35 @@ namespace WorldwideMusicSummary.Controllers
             return Json(topUsersArtists);
         }
 
+        [Route("Top/Track")]
+        [HttpGet]
+        public JsonResult GetArtistTopTrack([FromQuery] string artist)
+        {
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            RestClient client = new RestClient("https://api.spotify.com/v1/search");
+            RestRequest request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            request.AddQueryParameter("q", artist);
+            request.AddQueryParameter("limit", "1");
+            request.AddQueryParameter("type", "artist");
+            request.AddQueryParameter("market", session.Market);
+            var response = client.Execute(request);
+
+            ArtistList artistList = JsonConvert.DeserializeObject<Response>(response.Content).artists;
+            Artist foundArtist = artistList.artists.First();
+
+            client.BaseUrl = new Uri($"https://api.spotify.com/v1/artists/{foundArtist.id}/top-tracks");
+
+            request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            request.AddQueryParameter("market", session.Market);
+            response = client.Execute(request);
+
+            Track track = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks.First();
+
+            return Json(track);
+        }
+
         public string GenerateRandomString(int length)
         {
             StringBuilder text = new StringBuilder(length);

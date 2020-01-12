@@ -63,4 +63,14 @@
     padding: 4px;
     align-self: center;
     font-size: 1.2em;
+    max-width: max-content;
+}
+
+.personalOptions {
+    font-size: 1.1em;
+}
+
+#welcomeRow {
+    display: flex;
+    padding-top: 20px;
 }

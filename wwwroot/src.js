@@ -5,13 +5,20 @@ window.onload = function init() {
     const States = {
         Countries: 0,
         Trending: 1,
-        Personalized: 2
+        Tracks: 2,
+        Artists: 3
     }
 
     var state = States.Trending;
 
     var trendingTab = document.getElementById("trendingTab");
     var personalTab = document.getElementById("personalTab");
+
+    var trackButton = document.getElementById("trackRadioButton");
+    var artistButton = document.getElementById("artistRadioButton");
+
+    trackButton.addEventListener("change", () => updatePersonalView(States.Tracks));
+    artistButton.addEventListener("change", () => updatePersonalView(States.Artists));
 
     trendingTab.addEventListener("click", () => {
         if (state == States.Trending) return;
@@ -29,64 +36,27 @@ window.onload = function init() {
             country.polygons.forEach((p) => {
                 p.setOptions({ fillColor: country.color, strokeColor: country.color });
             });
-            countryList[key].artist = null;
-            countryList[key].song = null;
-            countryList[key].preview = null;
-
         }
-
-
     });
 
     personalTab.addEventListener("click", () => {
-        if (state == States.Personalized) return;
-        state = States.Personalized;
+        if (state == States.Tracks || state == States.Artists) return;
+        if (trackButton.checked) state = States.Tracks;
+        else state = States.Artists;
         console.log("Personalized");
         personalTab.className = "active";
         trendingTab.className = "";
 
-        if (activeCountry != null) {
-            activeCountry.info.close();
-        }
-
-        fetch("Top/Tracks").then(resp => {
-            resp.json().then(data => {
-
-                for (let key in countryList) {
-                    let country = countryList[key];
-                    country.polygons.forEach((p) => {
-                        p.setOptions({ fillColor: "#777777", strokeColor: "#777777" });
-                    });
-                    countryList[key].artist = null;
-                    countryList[key].song = null;
-                    countryList[key]["preview"] = null;
-
-                }
-
-                console.log(data);
-                for (let key in data) {
-                    let country = countryList[key];
-                    let info = data[key];
-                    country.polygons.forEach((p) => {
-                        p.setOptions({ fillColor: "#FF0000", strokeColor: "#FF0000" });
-                    });
-                    countryList[key]["artist"] = info["name"];
-                    countryList[key]["song"] = info["song"];
-                    countryList[key]["preview"] = new Audio(info["song"]["preview_url"]);
-                }
-
-            });
-        });
-
-
+        updatePersonalView();
     });
-
 
     var welcomeText = document.getElementById("welcomeText");
 
     fetch("Info/User").then(resp => {
         resp.json().then(data => {
             welcomeText.innerText = "Hello, " + data["display_name"];
+            console.log(data["images"]);
+            document.getElementById("profilePicture").src = data["images"][0]["url"];
         });
     });
 
@@ -188,20 +158,20 @@ window.onload = function init() {
                     google.maps.event.addListener(polygon, "click", function () {
                         if (activeCountry != null) {
                             activeCountry.info.close();
-                            if (state == States.Personalized && activeCountry["preview"] != null) activeCountry["preview"].pause();
+                            if (activeCountry["preview"] != null) activeCountry["preview"].pause();
                         }
 
                         activeCountry = countryList[code];
                         console.log(name);
                         console.log(code);
                         console.log(country);
+                        console.log(activeCountry);
                         switch (state) {
                             case States.Trending:
-                                if (activeCountry["artist"] != null) {
-                                    let artistName = activeCountry["trending"]["artist_name"];
+                                if (activeCountry["trending"] != null) {
                                     console.log("Already fetched...");
-                                    console.log(artistName);
-                                    info.setContent(`<div>${name}<br>Now trending: <strong>${artistName}</strong></div>`);
+                                    activeCountry["preview"] = new Audio(activeCountry["trending"]["songUrl"]);
+                                    setTrendingInfo(info);
                                     info.open(map);
                                 }
                                 else {
@@ -210,14 +180,36 @@ window.onload = function init() {
                                         resp.json().then(data => {
                                             if (data["message"]["body"]["artist_list"][0] == null) {
                                                 info.setContent(`<div>${name}<br>No data about this country.</div>`);
+                                                info.open(map);
                                             }
                                             else {
-                                                data = data["message"]["body"]["artist_list"][0]["artist"];
-                                                activeCountry["trending"] = data;
-                                                let artistName = data["artist_name"];
-                                                console.log(artistName);
-                                                info.setContent(`<div>${name}<br>Now trending: <strong>${artistName}</strong></div>`);
+                                                let artist = data["message"]["body"]["artist_list"][0]["artist"]["artist_name"];
+                                                console.log(artist);
+                                                let artistQuery = encodeURI(artist);
+                                                console.log(artistQuery);
+                                                fetch('Top/Track?artist=' + artistQuery).then(resp => {
+                                                    resp.json().then(data => {
+                                                        console.log(data);
+                                                        activeCountry["trending"] = {
+                                                            artist: data["artists"][0]["name"],
+                                                            song: data["name"],
+                                                            image: data["album"]["images"][1]["url"],
+                                                            songUrl: data["preview_url"]
+                                                        }
+                                                        activeCountry["preview"] = new Audio(data["preview_url"]);
+                                                        setTrendingInfo(info);
+
+                                                        google.maps.event.addListener(info, "closeclick", () => {
+                                                            activeCountry["preview"].pause();
+                                                            activeCountry["preview"].currentTime = 0;
+                                                            activeCountry = null;
+                                                        });
+                                                        info.open(map);
+                                                    });
+                                                });
                                             }
+                                        }).catch(e => {
+                                            info.setContent(`<div>${name}<br>No data about this country.</div>`);
                                             info.open(map);
                                         });
                                     });
@@ -227,14 +219,15 @@ window.onload = function init() {
                                 info.setContent(`<div>${name}</div>`);
                                 info.open(map);
                                 break;
-                            case States.Personalized:
-                                if (activeCountry["artist"] == null) {
+                            case States.Tracks:
+                            case States.Artists:
+                                if (activeCountry["personal"] == null) {
                                     info.setContent(`<div>${name}<br>No songs from this country were in your top 50.</div>`);
                                 }
                                 else {
-                                    let artistName = activeCountry["artist"];
-                                    let songName = activeCountry["song"]["name"];
-                                    let imageUrl = activeCountry["song"]["images"][1]["url"];
+                                    let artistName = activeCountry["personal"]["artist"];
+                                    let songName = activeCountry["personal"]["song"]["name"];
+                                    let imageUrl = activeCountry["personal"]["song"]["images"][1]["url"];
                                     let preview = activeCountry["preview"];
 
                                     let content = document.createElement("div");
@@ -282,8 +275,7 @@ window.onload = function init() {
                     center: center,
                     info: info,
                     trending: null,
-                    artist: null,
-                    song: null,
+                    personal: null,
                     preview: null,
                 };
             });
@@ -298,5 +290,81 @@ window.onload = function init() {
             color += letters[Math.floor(Math.random() * 16)];
         }
         return color;
+    }
+
+    function setTrendingInfo(info) {
+        let artistName = activeCountry["trending"]["artist"];
+        let songName = activeCountry["trending"]["song"];
+        let imageUrl = activeCountry["trending"]["image"];
+        let preview = activeCountry["preview"];
+        let country = activeCountry["name"]
+
+        console.log(artistName);
+
+        let content = document.createElement("div");
+        content.className = "songData";
+
+        let albumDiv = document.createElement("div");
+        albumDiv.className = "column";
+
+        let albumArt = document.createElement("img");
+        albumArt.src = imageUrl;
+        albumArt.width = 100;
+        albumArt.height = 100;
+        albumArt.style.cursor = "pointer";
+        albumArt.addEventListener("click", () => {
+            preview.currentTime = 0;
+            if (preview.paused)
+                preview.play();
+            else preview.pause();
+        });
+        albumDiv.appendChild(albumArt);
+        content.appendChild(albumDiv);
+
+        let songInfo = document.createElement("div");
+        songInfo.className = "column";
+        songInfo.innerHTML = `${country}<br>${artistName} - <strong>${songName}</strong>`;
+
+        content.appendChild(songInfo);
+
+        info.setContent(content);
+    }
+
+    function updatePersonalView(newState) {
+        if (newState != undefined) state = newState;
+        if (activeCountry != null) {
+            activeCountry.info.close();
+            if (activeCountry.preview != null) activeCountry.preview.pause();
+        }
+
+        let url = "Top/Tracks";
+        if (state == States.Artists) url = "Top/Artists";
+        fetch(url).then(resp => {
+            resp.json().then(data => {
+
+                for (let key in countryList) {
+                    let country = countryList[key];
+                    country.polygons.forEach((p) => {
+                        p.setOptions({ fillColor: "#777777", strokeColor: "#777777" });
+                    });
+                    countryList[key]["personal"] = null;
+                }
+
+                console.log(data);
+                for (let key in data) {
+                    let country = countryList[key];
+                    let top = data[key];
+                    country.polygons.forEach((p) => {
+                        p.setOptions({ fillColor: "#FF0000", strokeColor: "#FF0000" });
+                    });
+                    countryList[key]["personal"] = {
+                        artist: top["name"],
+                        song: top["song"],
+                        songUrl: new Audio(top["song"]["preview_url"])
+                    };
+                    countryList[key]["preview"] = countryList[key]["personal"]["songUrl"];
+                }
+            });
+        });
     }
 }
