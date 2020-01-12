@@ -195,10 +195,23 @@ namespace WorldwideMusicSummary.Controllers
             var response = client.Execute(request);
 
             TopTracks tracksList = JsonConvert.DeserializeObject<TopTracks>(response.Content);
+            List<Track> tracks = tracksList.items;
+            string[] trackIds = tracks.Select(x => x.id).ToArray();
+
+            client.BaseUrl = new Uri("https://api.spotify.com/v1/tracks");
+
+            request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            string ids = String.Join(",", trackIds);
+            request.AddQueryParameter("ids", ids);
+            request.AddQueryParameter("market", session.Market);
+            response = client.Execute(request);
+
+            tracks = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks;
 
             Dictionary<string, ArtistInfo> artists = new Dictionary<string, ArtistInfo>();
-            var items = tracksList.items;
-            for (int i = 0; i < tracksList.items.Count; ++i)
+            var items = tracks;
+            for (int i = 0; i < tracks.Count; ++i)
             {
                 string id = items[i].external_ids.isrc.Substring(0, 2) + items[i].artists[0].name;
                 if (artists.ContainsKey(id))
@@ -224,15 +237,16 @@ namespace WorldwideMusicSummary.Controllers
             }
 
             var sortedArtists = artists.ToList();
-
             sortedArtists.Sort((pair1, pair2) => pair2.Value.Counter.CompareTo(pair1.Value.Counter));
 
             Dictionary<string, ArtistInfo> topUsersArtists = new Dictionary<string, ArtistInfo>();
             for (int i = 0; i < sortedArtists.Count; ++i)
             {
-                if (!topUsersArtists.ContainsKey(sortedArtists[i].Value.Country))
+                string code = sortedArtists[i].Value.Country;
+                if (code == "QM" || code == "QZ") code = "US";
+                if (!topUsersArtists.ContainsKey(code))
                 {
-                    topUsersArtists.Add(sortedArtists[i].Key.Substring(0, 2), sortedArtists[i].Value);
+                    topUsersArtists.Add(code, sortedArtists[i].Value);
                 }
             }
             return Json(topUsersArtists);
