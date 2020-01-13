@@ -13,13 +13,13 @@ namespace WorldwideMusicSummary.Controllers
 {
     [Route("api/Info")]
     [ApiController]
-    public class MusicInfoController : Controller
+    public class MusixmatchController : Controller
     {
         RestClient client = new RestClient("https://api.musixmatch.com/ws/1.1/");
 
         private readonly IOptions<MusicApiSecrets> _options;
 
-        public MusicInfoController(IOptions<MusicApiSecrets> options)
+        public MusixmatchController(IOptions<MusicApiSecrets> options)
         {
             _options = options;
         }

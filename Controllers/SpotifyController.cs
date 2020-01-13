@@ -15,13 +15,13 @@ namespace WorldwideMusicSummary.Controllers
 {
     [Route("")]
     [ApiController]
-    public class UserInfoController : Controller
+    public class SpotifyController : Controller
     {
         private readonly UserContext _context;
         private readonly IOptions<MusicApiSecrets> _options;
-        private string scope = "user-read-private user-read-email playlist-read-private user-top-read";
+        private string scope = "user-read-private user-top-read";
 
-        public UserInfoController(UserContext context, IOptions<MusicApiSecrets> options)
+        public SpotifyController(UserContext context, IOptions<MusicApiSecrets> options)
         {
             _context = context;
             _options = options;
@@ -93,7 +93,7 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Refresh")]
         [HttpGet]
-        public async Task<ActionResult> GetRefreshedAccessToken()
+        public async Task<IActionResult> GetRefreshedAccessToken()
         {
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
 
@@ -118,8 +118,10 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Info/User")]
         [HttpGet]
-        public string GetUserInfo()
+        public async Task<string> GetUserInfoAsync()
         {
+            _ = await GetRefreshedAccessToken();
+
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me");
             RestRequest request = new RestRequest(Method.GET);
@@ -132,8 +134,10 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Top/Tracks")]
         [HttpGet]
-        public JsonResult GetUsersTopTracks()
+        public async Task<JsonResult> GetUsersTopTracksAsync()
         {
+            _ = await GetRefreshedAccessToken();
+
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
             RestRequest request = new RestRequest(Method.GET);
@@ -184,8 +188,10 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Top/Artists")]
         [HttpGet]
-        public JsonResult GetUsersTopArtistsTracks()
+        public async Task<JsonResult> GetUsersTopArtistsTracksAsync()
         {
+            _ = await GetRefreshedAccessToken();
+
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
             RestRequest request = new RestRequest(Method.GET);
@@ -210,10 +216,10 @@ namespace WorldwideMusicSummary.Controllers
             tracks = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks;
 
             Dictionary<string, ArtistInfo> artists = new Dictionary<string, ArtistInfo>();
-            var items = tracks;
+
             for (int i = 0; i < tracks.Count; ++i)
             {
-                string id = items[i].external_ids.isrc.Substring(0, 2) + items[i].artists[0].name;
+                string id = tracks[i].external_ids.isrc.Substring(0, 2) + tracks[i].artists[0].name;
                 if (artists.ContainsKey(id))
                 {
                     ++artists[id].Counter;
@@ -223,14 +229,14 @@ namespace WorldwideMusicSummary.Controllers
                     artists.Add(id, new ArtistInfo()
                     {
                         Id = id,
-                        Name = items[i].artists[0].name,
-                        Country = items[i].external_ids.isrc.Substring(0, 2),
+                        Name = tracks[i].artists[0].name,
+                        Country = tracks[i].external_ids.isrc.Substring(0, 2),
                         Counter = 1,
                         Song = new UserTrack()
                         {
-                            Name = items[i].name,
-                            Images = items[i].album.images,
-                            Preview_url = items[i].preview_url
+                            Name = tracks[i].name,
+                            Images = tracks[i].album.images,
+                            Preview_url = tracks[i].preview_url
                         }
                     });
                 }
@@ -254,8 +260,10 @@ namespace WorldwideMusicSummary.Controllers
 
         [Route("Top/Track")]
         [HttpGet]
-        public JsonResult GetArtistTopTrack([FromQuery] string artist)
+        public async Task<JsonResult> GetArtistTopTrackAsync([FromQuery] string artist)
         {
+            _ = await GetRefreshedAccessToken();
+
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/search");
             RestRequest request = new RestRequest(Method.GET);
