@@ -84,16 +84,14 @@ namespace WorldwideMusicSummary.Controllers
                     session.Date = DateTime.Now;
                     _context.Sessions.Update(session);
                 }
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
             }
-            else await GetRefreshedAccessToken();
+            else RefreshAccessToken();
 
             return RedirectToAction("Home", "Home");
         }
 
-        [Route("Refresh")]
-        [HttpGet]
-        public async Task<IActionResult> GetRefreshedAccessToken()
+        public bool RefreshAccessToken()
         {
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
 
@@ -111,16 +109,17 @@ namespace WorldwideMusicSummary.Controllers
                 session.Access_token = accessTokens.Access_token;
                 session.Token_type = accessTokens.Token_type;
                 session.Date = DateTime.Now;
-                await _context.SaveChangesAsync();
+                _context.SaveChanges();
+                return true;
             }
-            return StatusCode(200);
+            return false;
         }
 
         [Route("Info/User")]
         [HttpGet]
         public async Task<string> GetUserInfoAsync()
         {
-            _ = await GetRefreshedAccessToken();
+            RefreshAccessToken();
 
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me");
@@ -136,7 +135,7 @@ namespace WorldwideMusicSummary.Controllers
         [HttpGet]
         public async Task<JsonResult> GetUsersTopTracksAsync()
         {
-            _ = await GetRefreshedAccessToken();
+            RefreshAccessToken();
 
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
@@ -190,7 +189,7 @@ namespace WorldwideMusicSummary.Controllers
         [HttpGet]
         public async Task<JsonResult> GetUsersTopArtistsTracksAsync()
         {
-            _ = await GetRefreshedAccessToken();
+            RefreshAccessToken();
 
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/me/top/tracks");
@@ -262,7 +261,7 @@ namespace WorldwideMusicSummary.Controllers
         [HttpGet]
         public async Task<JsonResult> GetArtistTopTrackAsync([FromQuery] string artist)
         {
-            _ = await GetRefreshedAccessToken();
+            RefreshAccessToken();
 
             Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
             RestClient client = new RestClient("https://api.spotify.com/v1/search");
@@ -283,6 +282,27 @@ namespace WorldwideMusicSummary.Controllers
             request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
             request.AddQueryParameter("market", session.Market);
             response = client.Execute(request);
+
+            Track track = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks.First();
+
+            return Json(track);
+        }
+
+        [Route("Info/Find")]
+        [HttpGet]
+        public async Task<JsonResult> GetQueriedTrackAsync([FromQuery] string artist, [FromQuery] string song)
+        {
+            RefreshAccessToken();
+
+            Session session = _context.Sessions.Single(c => c.UserCookie == Request.Cookies["UserCookie"]);
+            RestClient client = new RestClient("https://api.spotify.com/v1/search");
+            RestRequest request = new RestRequest(Method.GET);
+            request.AddHeader("Authorization", session.Token_type + " " + session.Access_token);
+            request.AddQueryParameter("q", "artist:" + artist + " track:" + song);
+            request.AddQueryParameter("limit", "1");
+            request.AddQueryParameter("type", "track");
+            request.AddQueryParameter("market", session.Market);
+            var response = client.Execute(request);
 
             Track track = JsonConvert.DeserializeObject<TrackList>(response.Content).tracks.First();
 
